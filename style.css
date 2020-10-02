@@ -1,0 +1,26 @@
+.bg-dark {
+    color: #cfcfcf;
+    background-color: #343030;
+}
+
+.bg-light {
+    color: #343030;
+    background-color: #cfcfcf;
+}
+
+.mg-horizontal {
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.row-container {
+    display: flex;
+    align-content: space-between;
+    flex-direction: row;
+}
+
+.column-container {
+    display: flex;
+    align-content: space-between;
+    flex-direction: column;
+}

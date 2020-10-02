@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Skin support using canvas</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+
+<body class="bg-light">
+    <div>
+        <div class="row-container">
+            <input id="input-img" type="file" />
+            <div class="column-container mg-horizontal">
+                <label for="input-sprite-width">Sprite width:</label>
+                <input id="input-sprite-width" type="number" value="96" />
+                <label for="input-sprite-height">Sprite height:</label>
+                <input id="input-sprite-height" type="number" value="64" />
+            </div>
+            <div class="column-container">
+                <label for="input-number-patterns">Nb patterns</label>
+                <input id="input-number-patterns" type="number" value="14" />
+            </div>
+        </div>
+
+        <div>
+            <canvas id="skin-support-canvas"></canvas>
+            <div class="row-container">
+                <button id="slice-canvas">Slice image</button>
+                <button id="resize-canvas">Resize canvas</button>
+                <button id="clear-all">Clear all</button>
+            </div>
+        </div>
+        <div id="debug-canvas">
+        </div>
+        <div id="debug-resize">            
+        </div>
+    </div>
+
+    <script type="text/javascript" src="canvas.js"></script>
+</body>
+
+</html>
