@@ -1,3 +1,4 @@
+const POWER = 10;
 let widthWeapon = 96;
 let heightWeapon = 64;
 let nbPatterns = 14;
@@ -114,24 +115,15 @@ const getZoomedInCoords = (X, Y, newSize) => {
     return zoomedInCoords;
 };
 
-const getZoomedOutCoords = () => {};
-
-/**
- * Resize given canvas
- * @param {string} canvasId Id of the canvas to zoom-in
- */
-const zoomInCanvas = (canvasId) => {
-    const pow = 10;
-    const resizing = Math.pow(2, pow);
-
+const resizeCanvas = (canvasId, newCanvasId, newCanvasDivId, resizeFactor, resizeFunc) => {
     let canvas = document.createElement("canvas");
     canvas = document.getElementById(canvasId);
     const width = canvas.width;
     const height = canvas.height;
 
-    let newCanvas = createCanvas(`zoomed-in-${canvasId}`, "debug-zoom-in");
-    newCanvas.width = width * pow;
-    newCanvas.height = height * pow;
+    let newCanvas = createCanvas(newCanvasId, newCanvasDivId);
+    newCanvas.width = width * resizeFactor;
+    newCanvas.height = height * resizeFactor;
     const newWidth = newCanvas.width;
     const newHeight = newCanvas.height;
 
@@ -144,28 +136,65 @@ const zoomInCanvas = (canvasId) => {
     let imageDataNewCanvas = contextNewCanvas.getImageData(0, 0, newWidth, newHeight);
     let newData = imageDataNewCanvas.data;
 
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const newCoords = getZoomedInCoords(x * pow, y * pow, pow);
-            const colorIndices = getColorIndicesForCoords(x, y, width);
-            const [red, green, blue, alpha] = colorIndices;
-
-            for (let coord of newCoords) {
-                const newColorIndices = getColorIndicesForCoords(coord.X, coord.Y, newWidth);
-                const [zoomedInRed, zoomedInGreen, zoomedInBlue, zoomedInAlpha] = newColorIndices;
-
-                newData[zoomedInRed] = data[red];
-                newData[zoomedInGreen] = data[green];
-                newData[zoomedInBlue] = data[blue];
-                newData[zoomedInAlpha] = data[alpha];
-            }
-        }
-    }
+    resizeFunc(width, height, newWidth, newHeight, data, newData);
 
     contextNewCanvas.putImageData(imageDataNewCanvas, 0, 0);
 };
 
+/**
+ * Resize given canvas
+ * @param {string} canvasId Id of the canvas to zoom-in
+ */
+const zoomInCanvas = (canvasId) => {
+    const newCanvasId = `zoomed-in-${canvasId}`;
+    const newCanvasDivId = "debug-zoom-in";
+
+    const resizeFunc = (width, height, newWidth, _, data, newData) => {
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const newCoords = getZoomedInCoords(x * POWER, y * POWER, POWER);
+                const colorIndices = getColorIndicesForCoords(x, y, width);
+                const [red, green, blue, alpha] = colorIndices;
+
+                for (let coord of newCoords) {
+                    const newColorIndices = getColorIndicesForCoords(coord.X, coord.Y, newWidth);
+                    const [zoomedInRed, zoomedInGreen, zoomedInBlue, zoomedInAlpha] = newColorIndices;
+
+                    newData[zoomedInRed] = data[red];
+                    newData[zoomedInGreen] = data[green];
+                    newData[zoomedInBlue] = data[blue];
+                    newData[zoomedInAlpha] = data[alpha];
+                }
+            }
+        }
+    };
+
+    resizeCanvas(canvasId, newCanvasId, newCanvasDivId, POWER, resizeFunc);
+};
+
+const zoomOutCanvas = (canvasId) => {
+    const newCanvasId = `zoomed-out-${canvasId}`;
+    const newCanvasDivId = "debug-zoom-out";
+
+    const resizeFunc = (width, _, newWidth, newHeight, data, newData) => {
+        for (let y = 0; y < newHeight; y++) {
+            for (let x = 0; x < newWidth; x++) {
+                const [zoomedOutRed, zoomedOutGreen, zoomedOutBlue, zoomedOutAlpha] = getColorIndicesForCoords(x, y, newWidth);
+                const [red, green, blue, alpha] = getColorIndicesForCoords(x * POWER, y * POWER, width);
+
+                newData[zoomedOutRed] = data[red];
+                newData[zoomedOutGreen] = data[green];
+                newData[zoomedOutBlue] = data[blue];
+                newData[zoomedOutAlpha] = data[alpha];
+            }
+        }
+    };
+
+    resizeCanvas(canvasId, newCanvasId, newCanvasDivId, 1 / POWER, resizeFunc);
+};
+
 document.getElementById("zoom-in-canvas").onclick = () => zoomInCanvas("canvas-default-skin");
+document.getElementById("zoom-out-canvas").onclick = () => zoomOutCanvas("zoomed-in-canvas-default-skin");
 document.getElementById("clear-all").onclick = () => {
     document.getElementById("debug-canvas").innerHTML = "";
     document.getElementById("debug-zoom-in").innerHTML = "";
