@@ -100,11 +100,24 @@ document.getElementById("slice-canvas").onclick = () => {
     sliceMainCanvasIntoMultipleCanvas();
 };
 
+/**
+ * Get color indices for coordinates
+ * @param {number} x 
+ * @param {number} y 
+ * @param {number} width 
+ */
 const getColorIndicesForCoords = (x, y, width) => {
     const red = y * (width * 4) + x * 4;
     return [red, red + 1, red + 2, red + 3];
 };
 
+/**
+ * Get zoomed in coordinates based on a given size
+ * 
+ * @param {number} X 
+ * @param {number} Y 
+ * @param {number} newSize
+ */
 const getZoomedInCoords = (X, Y, newSize) => {
     let zoomedInCoords = [];
     for (let diffX = 0; diffX < newSize; diffX++) {
@@ -115,6 +128,14 @@ const getZoomedInCoords = (X, Y, newSize) => {
     return zoomedInCoords;
 };
 
+/**
+ * Generic resize function
+ * @param {string} canvasId
+ * @param {string} newCanvasId
+ * @param {string} newCanvasDivId 
+ * @param {number} resizeFactor 
+ * @param {(width, height, newWidth, newHeight, data, newData) => {}} resizeFunc 
+ */
 const resizeCanvas = (canvasId, newCanvasId, newCanvasDivId, resizeFactor, resizeFunc) => {
     let canvas = document.createElement("canvas");
     canvas = document.getElementById(canvasId);
@@ -142,8 +163,8 @@ const resizeCanvas = (canvasId, newCanvasId, newCanvasDivId, resizeFactor, resiz
 };
 
 /**
- * Resize given canvas
- * @param {string} canvasId Id of the canvas to zoom-in
+ * Zoom in given canvas based on the value of POWER
+ * @param {string} canvasId Id of the canvas to zoom in
  */
 const zoomInCanvas = (canvasId) => {
     const newCanvasId = `zoomed-in-${canvasId}`;
@@ -172,6 +193,10 @@ const zoomInCanvas = (canvasId) => {
     resizeCanvas(canvasId, newCanvasId, newCanvasDivId, POWER, resizeFunc);
 };
 
+/**
+ * Zoom out given canvas based on the value of POWER
+ * @param {string} canvasId Id of the canvas to zoom out
+ */
 const zoomOutCanvas = (canvasId) => {
     const newCanvasId = `zoomed-out-${canvasId}`;
     const newCanvasDivId = "debug-zoom-out";
