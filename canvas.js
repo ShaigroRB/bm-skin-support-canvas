@@ -104,21 +104,23 @@ const getColorIndicesForCoords = (x, y, width) => {
     return [red, red + 1, red + 2, red + 3];
 };
 
-const getResizedCoords = (X, Y, newSize) => {
-    let resizedCoords = [];
+const getZoomedInCoords = (X, Y, newSize) => {
+    let zoomedInCoords = [];
     for (let diffX = 0; diffX < newSize; diffX++) {
         for (let diffY = 0; diffY < newSize; diffY++) {
-            resizedCoords.push({ "X": X + diffX, "Y": Y + diffY });
+            zoomedInCoords.push({ "X": X + diffX, "Y": Y + diffY });
         }
     }
-    return resizedCoords;
+    return zoomedInCoords;
 };
+
+const getZoomedOutCoords = () => {};
 
 /**
  * Resize given canvas
- * @param {string} canvasId Id of the canvas to resize
+ * @param {string} canvasId Id of the canvas to zoom-in
  */
-const resizeCanvas = (canvasId) => {
+const zoomInCanvas = (canvasId) => {
     const pow = 10;
     const resizing = Math.pow(2, pow);
 
@@ -127,7 +129,7 @@ const resizeCanvas = (canvasId) => {
     const width = canvas.width;
     const height = canvas.height;
 
-    let newCanvas = createCanvas(`resized-${canvasId}`, "debug-resize");
+    let newCanvas = createCanvas(`zoomed-in-${canvasId}`, "debug-zoom-in");
     newCanvas.width = width * pow;
     newCanvas.height = height * pow;
     const newWidth = newCanvas.width;
@@ -144,18 +146,18 @@ const resizeCanvas = (canvasId) => {
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-            const newCoords = getResizedCoords(x * pow, y * pow, pow);
+            const newCoords = getZoomedInCoords(x * pow, y * pow, pow);
             const colorIndices = getColorIndicesForCoords(x, y, width);
             const [red, green, blue, alpha] = colorIndices;
 
             for (let coord of newCoords) {
                 const newColorIndices = getColorIndicesForCoords(coord.X, coord.Y, newWidth);
-                const [resizedRed, resizedGreen, resizedBlue, resizedAlpha] = newColorIndices;
+                const [zoomedInRed, zoomedInGreen, zoomedInBlue, zoomedInAlpha] = newColorIndices;
 
-                newData[resizedRed] = data[red];
-                newData[resizedGreen] = data[green];
-                newData[resizedBlue] = data[blue];
-                newData[resizedAlpha] = data[alpha];
+                newData[zoomedInRed] = data[red];
+                newData[zoomedInGreen] = data[green];
+                newData[zoomedInBlue] = data[blue];
+                newData[zoomedInAlpha] = data[alpha];
             }
         }
     }
@@ -163,8 +165,8 @@ const resizeCanvas = (canvasId) => {
     contextNewCanvas.putImageData(imageDataNewCanvas, 0, 0);
 };
 
-document.getElementById("resize-canvas").onclick = () => resizeCanvas("canvas-default-skin");
+document.getElementById("zoom-in-canvas").onclick = () => zoomInCanvas("canvas-default-skin");
 document.getElementById("clear-all").onclick = () => {
     document.getElementById("debug-canvas").innerHTML = "";
-    document.getElementById("debug-resize").innerHTML = "";
+    document.getElementById("debug-zoom-in").innerHTML = "";
 };
