@@ -24,3 +24,25 @@
     align-content: space-between;
     flex-direction: column;
 }
+
+.invisible {
+    display: none;
+}
+
+.absolute {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+}
+
+.stacked-children {
+    position: relative;
+}
+
+.positive-depth {
+    z-index: 1;
+}
+
+#canvas-modif-pattern {
+    opacity: 0.65;
+}

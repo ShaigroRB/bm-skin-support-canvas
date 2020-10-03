@@ -1,10 +1,29 @@
+// define zoom factor
 const POWER = 10;
+
+// ids of elements
+const ID_CANVAS_ORIGINAL_SPRITE = "canvas-original-sprite";
+const ID_CANVAS_DEF_WEAP = "canvas-default-weapon";
+const ID_CANVAS_TMP = "canvas-tmp";
+const ID_CANVAS_MODIF_PATTERN = "canvas-modif-pattern";
+const ID_INPUT_SPRITE_WIDTH = "input-sprite-width";
+const ID_INPUT_SPRITE_HEIGHT = "input-sprite-height";
+const ID_INPUT_NB_PATTERNS = "input-number-patterns";
+const ID_INPUT_IMG = "input-img";
+const ID_BTN_START_MODIF = "btn-start-modification";
+const ID_BTN_SLICE = "btn-slice";
+const ID_BTN_ZOOM_IN = "btn-zoom-in";
+const ID_BTN_ZOOM_OUT = "btn-zoom-out";
+const ID_BTN_CLEAR = "btn-clear";
+const ID_DIV_MODIF = "div-modification";
+const ID_DIV_ZOOM_IN = "div-zoom-in";
+const ID_DIV_ZOOM_OUT = "div-zoom-out";
+
 let widthWeapon = 96;
 let heightWeapon = 64;
 let nbPatterns = 14;
 
-let originalCanvasImage = new Image();
-let originalCanvas = document.getElementById("skin-support-canvas");
+let originalCanvas = document.getElementById(ID_CANVAS_ORIGINAL_SPRITE);
 
 /**
  * Handler for when an image is loaded
@@ -25,18 +44,10 @@ const draw = (img) => {
     canvas.height = img.height;
     const context = canvas.getContext("2d");
     context.drawImage(img, 0, 0);
-    originalCanvasImage.src = originalCanvas.toDataURL();
 };
 
 const failed = () => {
     console.error("The provided file could not be loaded as an Image.");
-};
-
-document.getElementById("input-img").onchange = (evt) => {
-    let img = new Image();
-    img.onload = () => handleImgLoad(img);
-    img.onerror = () => failed();
-    img.src = URL.createObjectURL(evt.target.files[0]);
 };
 
 /**
@@ -50,11 +61,9 @@ const callbackOnchangeForElm = (id, callback) => {
     };
 };
 
-callbackOnchangeForElm("input-sprite-width", (val) => { widthWeapon = val });
-callbackOnchangeForElm("input-sprite-height", (val) => { heightWeapon = val });
-callbackOnchangeForElm("input-number-patterns", (val) => { nbPatterns = val });
-
-const debugCanvas = document.getElementById("debug-canvas");
+callbackOnchangeForElm(ID_INPUT_SPRITE_WIDTH, (val) => { widthWeapon = val });
+callbackOnchangeForElm(ID_INPUT_SPRITE_HEIGHT, (val) => { heightWeapon = val });
+callbackOnchangeForElm(ID_INPUT_NB_PATTERNS, (val) => { nbPatterns = val });
 
 /**
  * Create a canvas
@@ -75,29 +84,14 @@ const createCanvas = (canvasId, parentId) => {
  */
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const sliceMainCanvasIntoMultipleCanvas = () => {
-    debugCanvas.innerHTML = "";
+const sliceCanvasGivenPattern = (canvasId, pattern) => {
+    let canvas = document.createElement("canvas");
+    canvas = document.getElementById(canvasId);
+    canvas.width = widthWeapon;
+    canvas.height = heightWeapon;
 
-    const drawOnNewCanvas = (canvasId, pattern) => {
-        const idCanvas = `${canvasId}`;
-        let canvas = createCanvas(idCanvas, "debug-canvas");
-        canvas.width = widthWeapon;
-        canvas.height = heightWeapon;
-
-        const context = canvas.getContext("2d");
-        context.drawImage(originalCanvas, widthWeapon * pattern, 0, widthWeapon, heightWeapon, 0, 0, widthWeapon, heightWeapon);
-    };
-
-    drawOnNewCanvas("canvas-default-skin", 0);
-
-    // for (let pattern = 1; pattern <= nbPatterns; pattern++) {
-    //     drawOnNewCanvas(`canvas-pattern-${pattern}`, pattern);
-    // }
-};
-
-document.getElementById("slice-canvas").onclick = () => {
-    debugCanvas.innerHTML = "";
-    sliceMainCanvasIntoMultipleCanvas();
+    const context = canvas.getContext("2d");
+    context.drawImage(originalCanvas, widthWeapon * pattern, 0, widthWeapon, heightWeapon, 0, 0, widthWeapon, heightWeapon);
 };
 
 /**
@@ -136,13 +130,12 @@ const getZoomedInCoords = (X, Y, newSize) => {
  * @param {number} resizeFactor 
  * @param {(width, height, newWidth, newHeight, data, newData) => {}} resizeFunc 
  */
-const resizeCanvas = (canvasId, newCanvasId, newCanvasDivId, resizeFactor, resizeFunc) => {
-    let canvas = document.createElement("canvas");
-    canvas = document.getElementById(canvasId);
+const resizeCanvas = (canvasId, newCanvasId, resizeFactor, resizeFunc) => {
+    let canvas = document.getElementById(canvasId);
     const width = canvas.width;
     const height = canvas.height;
 
-    let newCanvas = createCanvas(newCanvasId, newCanvasDivId);
+    let newCanvas = document.getElementById(newCanvasId);
     newCanvas.width = width * resizeFactor;
     newCanvas.height = height * resizeFactor;
     const newWidth = newCanvas.width;
@@ -163,12 +156,11 @@ const resizeCanvas = (canvasId, newCanvasId, newCanvasDivId, resizeFactor, resiz
 };
 
 /**
- * Zoom in given canvas based on the value of POWER
- * @param {string} canvasId Id of the canvas to zoom in
+ * Zoom in based on the value of POWER
+ * @param {string} fromCanvasId Id of the canvas to zoom
+ * @param {string} toCanvasId Id of the canvas of the resulting zoom
  */
-const zoomInCanvas = (canvasId) => {
-    const newCanvasId = `zoomed-in-${canvasId}`;
-    const newCanvasDivId = "debug-zoom-in";
+const zoomInCanvas = (fromCanvasId, toCanvasId) => {
 
     const resizeFunc = (width, height, newWidth, _, data, newData) => {
         for (let y = 0; y < height; y++) {
@@ -190,16 +182,15 @@ const zoomInCanvas = (canvasId) => {
         }
     };
 
-    resizeCanvas(canvasId, newCanvasId, newCanvasDivId, POWER, resizeFunc);
+    resizeCanvas(fromCanvasId, toCanvasId, POWER, resizeFunc);
 };
 
 /**
- * Zoom out given canvas based on the value of POWER
- * @param {string} canvasId Id of the canvas to zoom out
+ * Zoom out based on the value of POWER
+ * @param {string} fromCanvasId Id of the canvas to zoom
+ * @param {string} toCanvasId Id of the canvas of the resulting zoom
  */
-const zoomOutCanvas = (canvasId) => {
-    const newCanvasId = `zoomed-out-${canvasId}`;
-    const newCanvasDivId = "debug-zoom-out";
+const zoomOutCanvas = (fromCanvasId, toCanvasId) => {
 
     const resizeFunc = (width, _, newWidth, newHeight, data, newData) => {
         for (let y = 0; y < newHeight; y++) {
@@ -215,12 +206,62 @@ const zoomOutCanvas = (canvasId) => {
         }
     };
 
-    resizeCanvas(canvasId, newCanvasId, newCanvasDivId, 1 / POWER, resizeFunc);
+    resizeCanvas(fromCanvasId, toCanvasId, 1 / POWER, resizeFunc);
 };
 
-document.getElementById("zoom-in-canvas").onclick = () => zoomInCanvas("canvas-default-skin");
-document.getElementById("zoom-out-canvas").onclick = () => zoomOutCanvas("zoomed-in-canvas-default-skin");
-document.getElementById("clear-all").onclick = () => {
-    document.getElementById("debug-canvas").innerHTML = "";
-    document.getElementById("debug-zoom-in").innerHTML = "";
+const copyCanvas = (fromCanvasId, toCanvasId) => {
+    const fromCanvas = document.getElementById(fromCanvasId);
+    let toCanvas = document.getElementById(toCanvasId);
+    toCanvas.width = fromCanvas.width;
+    toCanvas.height = fromCanvas.height;
+    const contextToCanvas = toCanvas.getContext("2d");
+    contextToCanvas.drawImage(fromCanvas, 0, 0);
+};
+
+const clearCanvas = (canvasId) => {
+    const canvas = document.getElementById(canvasId);
+    canvas.width = 0;
+    canvas.height = 0;
+};
+
+
+document.getElementById(ID_INPUT_IMG).onchange = (evt) => {
+    let img = new Image();
+    img.onload = () => handleImgLoad(img);
+    img.onerror = () => failed();
+    img.src = URL.createObjectURL(evt.target.files[0]);
+};
+
+let pattern = 1;
+document.getElementById(ID_BTN_SLICE).onclick = () => {
+    if (pattern > 14) {
+        pattern = 0;
+    }
+    sliceCanvasGivenPattern(ID_CANVAS_DEF_WEAP, pattern++);
+};
+
+document.getElementById(ID_BTN_ZOOM_IN).onclick = () => {
+    zoomInCanvas(ID_CANVAS_TMP, ID_CANVAS_DEF_WEAP);
+    copyCanvas(ID_CANVAS_DEF_WEAP, ID_CANVAS_TMP);
+}
+document.getElementById(ID_BTN_ZOOM_OUT).onclick = () => {
+    zoomOutCanvas(ID_CANVAS_TMP, ID_CANVAS_DEF_WEAP);
+    copyCanvas(ID_CANVAS_DEF_WEAP, ID_CANVAS_TMP);
+}
+document.getElementById(ID_BTN_CLEAR).onclick = () => {
+    clearCanvas(ID_CANVAS_DEF_WEAP);
+    clearCanvas(ID_CANVAS_TMP);
+};
+
+document.getElementById(ID_BTN_START_MODIF).onclick = () => {
+    if (pattern > nbPatterns) {
+        pattern = 1;
+    }
+    sliceCanvasGivenPattern(ID_CANVAS_TMP, 0);
+    zoomInCanvas(ID_CANVAS_TMP, ID_CANVAS_DEF_WEAP);
+    copyCanvas(ID_CANVAS_DEF_WEAP, ID_CANVAS_TMP);
+
+    sliceCanvasGivenPattern(ID_CANVAS_TMP, pattern++);
+    zoomInCanvas(ID_CANVAS_TMP, ID_CANVAS_MODIF_PATTERN);
+    copyCanvas(ID_CANVAS_MODIF_PATTERN, ID_CANVAS_TMP);
 };
