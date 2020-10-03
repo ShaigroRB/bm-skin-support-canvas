@@ -1,5 +1,6 @@
+// --------------- Variables -------------
 // define zoom factor
-const POWER = 10;
+const RESIZE_FACTOR = 15;
 
 // ids of elements
 const ID_CANVAS_ORIGINAL_SPRITE = "canvas-original-sprite";
@@ -14,6 +15,10 @@ const ID_BTN_START_MODIF = "btn-start-modification";
 const ID_BTN_SLICE = "btn-slice";
 const ID_BTN_ZOOM_IN = "btn-zoom-in";
 const ID_BTN_ZOOM_OUT = "btn-zoom-out";
+const ID_BTN_LIGHTEST = "btn-lightest-color";
+const ID_BTN_NORMAL = "btn-normal-color";
+const ID_BTN_DARKEST = "btn-darkest-color";
+const ID_BTN_ERASE = "btn-erase-color";
 const ID_BTN_CLEAR = "btn-clear";
 const ID_DIV_MODIF = "div-modification";
 const ID_DIV_ZOOM_IN = "div-zoom-in";
@@ -24,6 +29,46 @@ let heightWeapon = 64;
 let nbPatterns = 14;
 
 let originalCanvas = document.getElementById(ID_CANVAS_ORIGINAL_SPRITE);
+let pattern = 1;
+let currPixelColor = new PixelColor();
+
+// -------------- Classes -----------------
+/**
+ * Represents the color of a pixel
+ */
+class PixelColor {
+    constructor(red, green, blue, alpha) {
+        this.r = red;
+        this.g = green;
+        this.b = blue;
+        this.a = alpha;
+    }
+
+    setUniformValues = (value, alpha = 255) => {
+        this.r = value;
+        this.g = value;
+        this.b = value;
+        this.a = alpha;
+    }
+
+    setLightestColor = () => {
+        this.setUniformValues(255);
+    }
+
+    setNormalColor = () => {
+        this.setUniformValues(226);
+    }
+
+    setDarkestColor = () => {
+        this.setUniformValues(149);
+    }
+
+    setEraseColor = () => {
+        this.setUniformValues(0, 0);
+    }
+}
+
+// ------------- Functions ---------------
 
 /**
  * Handler for when an image is loaded
@@ -60,10 +105,6 @@ const callbackOnchangeForElm = (id, callback) => {
         callback(+evt.target.value);
     };
 };
-
-callbackOnchangeForElm(ID_INPUT_SPRITE_WIDTH, (val) => { widthWeapon = val });
-callbackOnchangeForElm(ID_INPUT_SPRITE_HEIGHT, (val) => { heightWeapon = val });
-callbackOnchangeForElm(ID_INPUT_NB_PATTERNS, (val) => { nbPatterns = val });
 
 /**
  * Create a canvas
@@ -156,7 +197,7 @@ const resizeCanvas = (canvasId, newCanvasId, resizeFactor, resizeFunc) => {
 };
 
 /**
- * Zoom in based on the value of POWER
+ * Zoom in based on the value of RESIZE_FACTOR
  * @param {string} fromCanvasId Id of the canvas to zoom
  * @param {string} toCanvasId Id of the canvas of the resulting zoom
  */
@@ -165,7 +206,7 @@ const zoomInCanvas = (fromCanvasId, toCanvasId) => {
     const resizeFunc = (width, height, newWidth, _, data, newData) => {
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                const newCoords = getZoomedInCoords(x * POWER, y * POWER, POWER);
+                const newCoords = getZoomedInCoords(x * RESIZE_FACTOR, y * RESIZE_FACTOR, RESIZE_FACTOR);
                 const colorIndices = getColorIndicesForCoords(x, y, width);
                 const [red, green, blue, alpha] = colorIndices;
 
@@ -182,11 +223,11 @@ const zoomInCanvas = (fromCanvasId, toCanvasId) => {
         }
     };
 
-    resizeCanvas(fromCanvasId, toCanvasId, POWER, resizeFunc);
+    resizeCanvas(fromCanvasId, toCanvasId, RESIZE_FACTOR, resizeFunc);
 };
 
 /**
- * Zoom out based on the value of POWER
+ * Zoom out based on the value of RESIZE_FACTOR
  * @param {string} fromCanvasId Id of the canvas to zoom
  * @param {string} toCanvasId Id of the canvas of the resulting zoom
  */
@@ -196,7 +237,7 @@ const zoomOutCanvas = (fromCanvasId, toCanvasId) => {
         for (let y = 0; y < newHeight; y++) {
             for (let x = 0; x < newWidth; x++) {
                 const [zoomedOutRed, zoomedOutGreen, zoomedOutBlue, zoomedOutAlpha] = getColorIndicesForCoords(x, y, newWidth);
-                const [red, green, blue, alpha] = getColorIndicesForCoords(x * POWER, y * POWER, width);
+                const [red, green, blue, alpha] = getColorIndicesForCoords(x * RESIZE_FACTOR, y * RESIZE_FACTOR, width);
 
                 newData[zoomedOutRed] = data[red];
                 newData[zoomedOutGreen] = data[green];
@@ -206,9 +247,14 @@ const zoomOutCanvas = (fromCanvasId, toCanvasId) => {
         }
     };
 
-    resizeCanvas(fromCanvasId, toCanvasId, 1 / POWER, resizeFunc);
+    resizeCanvas(fromCanvasId, toCanvasId, 1 / RESIZE_FACTOR, resizeFunc);
 };
 
+/**
+ * Copy content of a canvas to another one
+ * @param {string} fromCanvasId 
+ * @param {string} toCanvasId 
+ */
 const copyCanvas = (fromCanvasId, toCanvasId) => {
     const fromCanvas = document.getElementById(fromCanvasId);
     let toCanvas = document.getElementById(toCanvasId);
@@ -218,12 +264,54 @@ const copyCanvas = (fromCanvasId, toCanvasId) => {
     contextToCanvas.drawImage(fromCanvas, 0, 0);
 };
 
+/**
+ * Clear content of a canvas
+ * @param {string} canvasId 
+ */
 const clearCanvas = (canvasId) => {
     const canvas = document.getElementById(canvasId);
-    canvas.width = 0;
-    canvas.height = 0;
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, canvas.width, canvas.height);
 };
 
+
+/**
+ * Redraw a pixel
+ * @param {string} canvasId 
+ * @param {number} pixelX 
+ * @param {number} pixelY 
+ * @param {PixelColor} color
+ */
+const drawPixel = (canvasId, pixelX, pixelY, color) => {
+    let canvas = document.createElement("canvas");
+    canvas = document.getElementById(canvasId);
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const context = canvas.getContext("2d");
+    const imageData = context.getImageData(0, 0, width, height);
+    let data = imageData.data;
+
+    for (let y = pixelY; y < pixelY + RESIZE_FACTOR; y++) {
+        for (let x = pixelX; x < pixelX + RESIZE_FACTOR; x++) {
+            const [r, g, b, a] = getColorIndicesForCoords(x, y, width);
+            data[r] = color.r;
+            data[g] = color.g;
+            data[b] = color.b;
+            data[a] = color.a;
+        }
+    }
+
+    context.putImageData(imageData, 0, 0);
+};
+
+// --------------- Callbacks ----------------------
+
+callbackOnchangeForElm(ID_INPUT_SPRITE_WIDTH, (val) => { widthWeapon = val });
+callbackOnchangeForElm(ID_INPUT_SPRITE_HEIGHT, (val) => { heightWeapon = val });
+callbackOnchangeForElm(ID_INPUT_NB_PATTERNS, (val) => { nbPatterns = val });
+
+// ----------------- Listeners --------------------
 
 document.getElementById(ID_INPUT_IMG).onchange = (evt) => {
     let img = new Image();
@@ -232,7 +320,6 @@ document.getElementById(ID_INPUT_IMG).onchange = (evt) => {
     img.src = URL.createObjectURL(evt.target.files[0]);
 };
 
-let pattern = 1;
 document.getElementById(ID_BTN_SLICE).onclick = () => {
     if (pattern > 14) {
         pattern = 0;
@@ -249,8 +336,7 @@ document.getElementById(ID_BTN_ZOOM_OUT).onclick = () => {
     copyCanvas(ID_CANVAS_DEF_WEAP, ID_CANVAS_TMP);
 }
 document.getElementById(ID_BTN_CLEAR).onclick = () => {
-    clearCanvas(ID_CANVAS_DEF_WEAP);
-    clearCanvas(ID_CANVAS_TMP);
+    clearCanvas(ID_CANVAS_MODIF_PATTERN);
 };
 
 document.getElementById(ID_BTN_START_MODIF).onclick = () => {
@@ -264,4 +350,37 @@ document.getElementById(ID_BTN_START_MODIF).onclick = () => {
     sliceCanvasGivenPattern(ID_CANVAS_TMP, pattern++);
     zoomInCanvas(ID_CANVAS_TMP, ID_CANVAS_MODIF_PATTERN);
     copyCanvas(ID_CANVAS_MODIF_PATTERN, ID_CANVAS_TMP);
+};
+
+let beginModif = false;
+document.getElementById(ID_CANVAS_MODIF_PATTERN).onmousedown = () => {
+    beginModif = true;
+};
+document.getElementById(ID_CANVAS_MODIF_PATTERN).onmouseup = () => {
+    beginModif = false;
+};
+
+document.getElementById(ID_CANVAS_MODIF_PATTERN).onmousemove = (evt) => {
+    if (beginModif) {
+        const clickX = evt.layerX;
+        const clickY = evt.layerY;
+
+        const originPixelX = clickX - (clickX % RESIZE_FACTOR);
+        const originPixelY = clickY - (clickY % RESIZE_FACTOR);
+
+        drawPixel(ID_CANVAS_MODIF_PATTERN, originPixelX, originPixelY, currPixelColor);
+    }
+};
+
+document.getElementById(ID_BTN_LIGHTEST).onclick = () => {
+    currPixelColor.setLightestColor();
+};
+document.getElementById(ID_BTN_NORMAL).onclick = () => {
+    currPixelColor.setNormalColor();
+};
+document.getElementById(ID_BTN_DARKEST).onclick = () => {
+    currPixelColor.setDarkestColor();
+};
+document.getElementById(ID_BTN_ERASE).onclick = () => {
+    currPixelColor.setEraseColor();
 };
