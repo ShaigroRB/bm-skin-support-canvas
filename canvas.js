@@ -107,17 +107,11 @@ const ID_BTN_NEXT_PATTERN = "btn-next-pattern";
 const ID_BTN_ENABLE_SAVE = "btn-enable-img-save";
 const ID_BTN_SAVE_MODIF = "btn-save-modif";
 const ID_BTN_REPLACE_ORIGINAL = "btn-replace-original";
-const ID_BTN_SLICE = "btn-slice";
-const ID_BTN_ZOOM_IN = "btn-zoom-in";
-const ID_BTN_ZOOM_OUT = "btn-zoom-out";
 const ID_BTN_LIGHTEST = "btn-lightest-color";
 const ID_BTN_NORMAL = "btn-normal-color";
 const ID_BTN_DARKEST = "btn-darkest-color";
 const ID_BTN_ERASE = "btn-erase-color";
 const ID_BTN_CLEAR = "btn-clear";
-const ID_DIV_MODIF = "div-modification";
-const ID_DIV_ZOOM_IN = "div-zoom-in";
-const ID_DIV_ZOOM_OUT = "div-zoom-out";
 
 // canvases
 const originalCanvas = document.getElementById(ID_CANVAS_ORIGINAL_SPRITE);
@@ -460,24 +454,6 @@ document.getElementById(ID_INPUT_IMG).onchange = (evt) => {
     img.onerror = () => handleFailure();
     img.src = URL.createObjectURL(evt.target.files[0]);
 };
-//#endregion
-
-//#region Invisible buttons
-document.getElementById(ID_BTN_SLICE).onclick = () => {
-    if (pattern > 14) {
-        pattern = 0;
-    }
-    sliceSpriteGivenPattern(defSpriteSettings, defWeaponCanvas, pattern++);
-};
-
-document.getElementById(ID_BTN_ZOOM_IN).onclick = () => {
-    zoomInCanvas(smallTmpCanvas, defWeaponCanvas, defSpriteSettings.resizeFactor);
-    copyCanvas(defWeaponCanvas, bigTmpCanvas);
-}
-document.getElementById(ID_BTN_ZOOM_OUT).onclick = () => {
-    zoomOutCanvas(bigTmpCanvas, defWeaponCanvas, defSpriteSettings.resizeFactor);
-    copyCanvas(defWeaponCanvas, smallTmpCanvas);
-}
 //#endregion
 
 //#region Switch patterns and image saving
