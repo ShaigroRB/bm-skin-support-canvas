@@ -87,6 +87,7 @@ const RESIZE_FACTOR = 15;
 const ID_CANVAS_ORIGINAL_SPRITE = "canvas-original-sprite";
 const ID_CANVAS_DEF_WEAP = "canvas-default-weapon";
 const ID_CANVAS_TMP = "canvas-tmp";
+const ID_CANVAS_TMP2 = "canvas-tmp2";
 const ID_CANVAS_MODIF_PATTERN = "canvas-modif-pattern";
 const ID_INPUT_SPRITE_WIDTH = "input-sprite-width";
 const ID_INPUT_SPRITE_HEIGHT = "input-sprite-height";
@@ -94,6 +95,7 @@ const ID_INPUT_NB_PATTERNS = "input-number-patterns";
 const ID_INPUT_IMG = "input-img";
 const ID_BTN_START_MODIF = "btn-start-modification";
 const ID_BTN_ENABLE_SAVE = "btn-enable-img-save";
+const ID_BTN_SAVE_MODIF = "btn-save-modif";
 const ID_BTN_SLICE = "btn-slice";
 const ID_BTN_ZOOM_IN = "btn-zoom-in";
 const ID_BTN_ZOOM_OUT = "btn-zoom-out";
@@ -110,6 +112,7 @@ const ID_DIV_ZOOM_OUT = "div-zoom-out";
 const originalCanvas = document.getElementById(ID_CANVAS_ORIGINAL_SPRITE);
 const defWeaponCanvas = document.getElementById(ID_CANVAS_DEF_WEAP);
 const tmpCanvas = document.getElementById(ID_CANVAS_TMP);
+const tmp2Canvas = document.getElementById(ID_CANVAS_TMP2);
 const modifPatternCanvas = document.getElementById(ID_CANVAS_MODIF_PATTERN);
 
 const currPixelColor = new PixelColor(0, 0, 0, 0);
@@ -122,6 +125,8 @@ let imageDataPatterns = [];
 //#endregion
 
 // ------------- Functions ---------------
+//#region
+
 //#region Independant functions (use only parameters)
 
 /**
@@ -190,8 +195,9 @@ const createCanvas = (canvasId, parentId) => {
 /**
  * Sleep for given milliseconds
  * @param {number} ms
+ * @param {(value) => {}} callback
  */
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms, callback = () => { }) => new Promise(_ => setTimeout(callback, ms));
 
 /**
  * Slice a pattern from a sprite to a canvas using the settings of the sprite
@@ -385,7 +391,10 @@ const globalReset = () => {
     defSpriteSettings.setIsDefWeapDrawn(false);
     pattern = 0;
     setDisabled(ID_BTN_SAVE_MODIF, true);
+    setDisabled(ID_BTN_ENABLE_SAVE, false);
 };
+//#endregion
+
 //#endregion
 
 // ----------------- Listeners --------------------
@@ -453,6 +462,27 @@ document.getElementById(ID_BTN_START_MODIF).onclick = () => {
     }
 };
 
+document.getElementById(ID_BTN_ENABLE_SAVE).onclick = () => {
+    // load default data in the images data from the original image for the missing patterns
+    const context = originalCanvas.getContext("2d");
+
+    setDisabled(ID_BTN_ENABLE_SAVE, true);
+    sleep(100, (value) => {
+        console.log(value);
+        for (let tmpPattern = pattern + 1; tmpPattern <= defSpriteSettings.nbPatterns; tmpPattern++) {
+            sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, tmpPattern);
+            zoomInCanvas(tmpCanvas, tmp2Canvas);
+            const tmp2Context = tmp2Canvas.getContext("2d");
+            imageDataPatterns[tmpPattern] = tmp2Context.getImageData(0, 0, tmp2Canvas.width, tmp2Canvas.height);
+        }
+    });
+    sleep(3000, () => {
+        setDisabled(ID_BTN_SAVE_MODIF, false);
+    });
+};
+
+document.getElementById(ID_BTN_SAVE_MODIF).onclick = () => {
+};
 //#endregion
 
 //#region Event listeners on the pattern canvas
