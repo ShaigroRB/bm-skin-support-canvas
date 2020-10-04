@@ -114,9 +114,9 @@ const modifPatternCanvas = document.getElementById(ID_CANVAS_MODIF_PATTERN);
 const currPixelColor = new PixelColor(0, 0, 0, 0);
 const defSpriteSettings = new SpriteSettings(originalCanvas, 96, 64, 14);
 
-let pattern = 1;
+let pattern = 0;
 let beginModif = false;
-let patternsImageData = [];
+let imageDataPatterns = [];
 
 //#endregion
 
@@ -399,18 +399,27 @@ document.getElementById(ID_BTN_CLEAR).onclick = () => {
 };
 
 document.getElementById(ID_BTN_START_MODIF).onclick = () => {
+    const tmpContext = tmpCanvas.getContext("2d");
+    copyCanvas(modifPatternCanvas, tmpCanvas);
+    imageDataPatterns[pattern] = tmpContext.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
+
+    pattern++;
     if (pattern > defSpriteSettings.nbPatterns) {
         pattern = 1;
     }
     if (!defSpriteSettings.isDefWeapDrawn) {
         sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, 0);
         zoomInCanvas(tmpCanvas, defWeaponCanvas);
-        copyCanvas(defWeaponCanvas, tmpCanvas);
         defSpriteSettings.setIsDefWeapDrawn(true);
     }
-    sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, pattern++);
-    zoomInCanvas(tmpCanvas, modifPatternCanvas);
-    copyCanvas(modifPatternCanvas, tmpCanvas);
+    if (imageDataPatterns[pattern] == null || imageDataPatterns[pattern] == undefined) {
+        sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, pattern);
+        zoomInCanvas(tmpCanvas, modifPatternCanvas);
+    }
+    else {
+        tmpContext.putImageData(imageDataPatterns[pattern], 0, 0);
+        copyCanvas(tmpCanvas, modifPatternCanvas);
+    }
 };
 
 document.getElementById(ID_CANVAS_MODIF_PATTERN).onmousedown = () => {
