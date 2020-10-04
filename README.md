@@ -1,6 +1,8 @@
 # Skin support tool for easier resprite for the game Boring Man
 This tool is a prototype to make skin support easier for the game [Boring Man - OTSC](https://store.steampowered.com/app/346120/Boring_Man__Online_Tactical_Stickman_Combat/).
 
+You can access it on [codepen](https://codepen.io/Shaigro/full/xxVMYVa).
+
 ## How to use
 - Load the sprite you want to resprite thanks to "Choose file". It's loaded when you see the content of the image.
 - Search in sprite_info.txt to find the sprite width and height and the number of patterns (*its the number of images - 1*)
@@ -16,3 +18,4 @@ This tool is a prototype to make skin support easier for the game [Boring Man - 
 - redo all that in React (*oof*)
 - a video on how to use it
 - an upgraded version
+- merge with boring-generators to have one repo with all web boring man tools
