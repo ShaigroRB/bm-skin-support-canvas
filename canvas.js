@@ -6,24 +6,24 @@
 class SpriteSettings {
     /**
      * @param {HTMLCanvasElement} spriteCanvas 
-     * @param {number} widthPattern 
-     * @param {number} heightPattern 
+     * @param {number} patternWidth 
+     * @param {number} patternHeight 
      * @param {number} nbPatterns 
      */
-    constructor(spriteCanvas, widthPattern, heightPattern, nbPatterns) {
+    constructor(spriteCanvas, patternWidth, patternHeight, nbPatterns) {
         this.canvas = spriteCanvas;
-        this.widthPattern = widthPattern;
-        this.heightPattern = heightPattern;
+        this.patternWidth = patternWidth;
+        this.patternHeight = patternHeight;
         this.nbPatterns = nbPatterns;
         this.isDefWeapDrawn = false;
     }
 
-    setWidthPattern = (width) => {
-        this.widthPattern = width;
+    setPatternWidth = (width) => {
+        this.patternWidth = width;
     }
 
-    setHeightPattern = (height) => {
-        this.heightPattern = height;
+    setPatternHeight = (height) => {
+        this.patternHeight = height;
     }
 
     setNbPatterns = (nb) => {
@@ -32,6 +32,10 @@ class SpriteSettings {
 
     setIsDefWeapDrawn = (bool) => {
         this.isDefWeapDrawn = bool;
+    }
+
+    setSpriteWidth = (spriteWidth) => {
+        this.spriteWidth = spriteWidth;
     }
 }
 
@@ -86,8 +90,9 @@ const RESIZE_FACTOR = 15;
 // ids of elements
 const ID_CANVAS_ORIGINAL_SPRITE = "canvas-original-sprite";
 const ID_CANVAS_DEF_WEAP = "canvas-default-weapon";
-const ID_CANVAS_TMP = "canvas-tmp";
-const ID_CANVAS_TMP2 = "canvas-tmp2";
+const ID_CANVAS_SMALL_TMP = "canvas-small-tmp";
+const ID_CANVAS_BIG_TMP = "canvas-big-tmp";
+const ID_CANVAS_FINAL_RESULT = "canvas-final-result";
 const ID_CANVAS_MODIF_PATTERN = "canvas-modif-pattern";
 const ID_INPUT_SPRITE_WIDTH = "input-sprite-width";
 const ID_INPUT_SPRITE_HEIGHT = "input-sprite-height";
@@ -111,8 +116,9 @@ const ID_DIV_ZOOM_OUT = "div-zoom-out";
 // canvases
 const originalCanvas = document.getElementById(ID_CANVAS_ORIGINAL_SPRITE);
 const defWeaponCanvas = document.getElementById(ID_CANVAS_DEF_WEAP);
-const tmpCanvas = document.getElementById(ID_CANVAS_TMP);
-const tmp2Canvas = document.getElementById(ID_CANVAS_TMP2);
+const finalResultCanvas = document.getElementById(ID_CANVAS_FINAL_RESULT);
+const smallTmpCanvas = document.getElementById(ID_CANVAS_SMALL_TMP);
+const bigTmpCanvas = document.getElementById(ID_CANVAS_BIG_TMP);
 const modifPatternCanvas = document.getElementById(ID_CANVAS_MODIF_PATTERN);
 
 const currPixelColor = new PixelColor(0, 0, 0, 0);
@@ -144,7 +150,8 @@ const setDisabled = (elmId, isDisabled) => {
  * @param {SpriteSettings} defSpriteSettings
  */
 const handleImgLoad = (img, defSpriteSettings) => {
-    defSpriteSettings.heightPattern = img.height;
+    defSpriteSettings.setPatternHeight(img.height);
+    defSpriteSettings.setSpriteWidth(img.width);
     draw(img, defSpriteSettings);
 };
 
@@ -206,16 +213,16 @@ const sleep = (ms, callback = () => { }) => new Promise(_ => setTimeout(callback
  * @param {number} pattern
  */
 const sliceSpriteGivenPattern = (defSpriteSettings, toCanvas, pattern) => {
-    toCanvas.width = defSpriteSettings.widthPattern;
-    toCanvas.height = defSpriteSettings.heightPattern;
+    toCanvas.width = defSpriteSettings.patternWidth;
+    toCanvas.height = defSpriteSettings.patternHeight;
 
     const context = toCanvas.getContext("2d");
     context.drawImage(
         defSpriteSettings.canvas,
-        defSpriteSettings.widthPattern * pattern, 0,
-        defSpriteSettings.widthPattern, defSpriteSettings.heightPattern,
+        defSpriteSettings.patternWidth * pattern, 0,
+        defSpriteSettings.patternWidth, defSpriteSettings.patternHeight,
         0, 0,
-        defSpriteSettings.widthPattern, defSpriteSettings.heightPattern
+        defSpriteSettings.patternWidth, defSpriteSettings.patternHeight
     );
 };
 
@@ -381,6 +388,17 @@ const drawPixel = (canvas, pixelX, pixelY, color) => {
     context.putImageData(imageData, 0, 0);
 };
 
+/**
+ * Save the image data of a canvas inside a list
+ * @param {HTMLCanvasElement} canvas 
+ * @param {ImageData[]} list 
+ * @param {number} index 
+ */
+const saveImageData = (canvas, list, index) => {
+    const context = canvas.getContext("2d");
+    list[index] = context.getImageData(0, 0, canvas.width, canvas.height);
+};
+
 //#endregion
 
 //#region Dependant functions (use global variables)
@@ -392,6 +410,12 @@ const globalReset = () => {
     pattern = 0;
     setDisabled(ID_BTN_SAVE_MODIF, true);
     setDisabled(ID_BTN_ENABLE_SAVE, false);
+
+    smallTmpCanvas.width = defSpriteSettings.spriteWidth;
+    smallTmpCanvas.height = defSpriteSettings.patternHeight;
+
+    bigTmpCanvas.width = smallTmpCanvas.width * RESIZE_FACTOR;
+    bigTmpCanvas.height = smallTmpCanvas.height * RESIZE_FACTOR;
 };
 //#endregion
 
@@ -400,8 +424,8 @@ const globalReset = () => {
 // ----------------- Listeners --------------------
 //#region
 
-callbackOnchangeForElm(ID_INPUT_SPRITE_WIDTH, (val) => { defSpriteSettings.setWidthPattern(val); });
-callbackOnchangeForElm(ID_INPUT_SPRITE_HEIGHT, (val) => { defSpriteSettings.setHeightPattern(val); });
+callbackOnchangeForElm(ID_INPUT_SPRITE_WIDTH, (val) => { defSpriteSettings.setPatternWidth(val); });
+callbackOnchangeForElm(ID_INPUT_SPRITE_HEIGHT, (val) => { defSpriteSettings.setPatternHeight(val); });
 callbackOnchangeForElm(ID_INPUT_NB_PATTERNS, (val) => { defSpriteSettings.setNbPatterns(val); });
 
 document.getElementById(ID_INPUT_IMG).onchange = (evt) => {
@@ -423,57 +447,55 @@ document.getElementById(ID_BTN_SLICE).onclick = () => {
 };
 
 document.getElementById(ID_BTN_ZOOM_IN).onclick = () => {
-    zoomInCanvas(tmpCanvas, defWeaponCanvas);
-    copyCanvas(defWeaponCanvas, tmpCanvas);
+    zoomInCanvas(smallTmpCanvas, defWeaponCanvas);
+    copyCanvas(defWeaponCanvas, bigTmpCanvas);
 }
 document.getElementById(ID_BTN_ZOOM_OUT).onclick = () => {
-    zoomOutCanvas(tmpCanvas, defWeaponCanvas);
-    copyCanvas(defWeaponCanvas, tmpCanvas);
+    zoomOutCanvas(bigTmpCanvas, defWeaponCanvas);
+    copyCanvas(defWeaponCanvas, smallTmpCanvas);
 }
 //#endregion
 
 //#region Switch patterns and image saving
 document.getElementById(ID_BTN_START_MODIF).onclick = () => {
-    // save the image data of the current pattern before going to the next one
-    const tmpContext = tmpCanvas.getContext("2d");
-    copyCanvas(modifPatternCanvas, tmpCanvas);
-    imageDataPatterns[pattern] = tmpContext.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
-    pattern++;
+    saveImageData(modifPatternCanvas, imageDataPatterns, pattern);
 
+    pattern++;
     if (pattern > defSpriteSettings.nbPatterns) {
         pattern = 1;
     }
 
     // avoid drawing the default weapon each time we change pattern
     if (!defSpriteSettings.isDefWeapDrawn) {
-        sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, 0);
-        zoomInCanvas(tmpCanvas, defWeaponCanvas);
+        sliceSpriteGivenPattern(defSpriteSettings, smallTmpCanvas, 0);
+        zoomInCanvas(smallTmpCanvas, defWeaponCanvas);
         defSpriteSettings.setIsDefWeapDrawn(true);
+        saveImageData(defWeaponCanvas, imageDataPatterns, 0);
     }
 
     // if there is no data for the current pattern, draw the one from the original image
     if (imageDataPatterns[pattern] == null || imageDataPatterns[pattern] == undefined) {
-        sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, pattern);
-        zoomInCanvas(tmpCanvas, modifPatternCanvas);
+        sliceSpriteGivenPattern(defSpriteSettings, smallTmpCanvas, pattern);
+        zoomInCanvas(smallTmpCanvas, modifPatternCanvas);
     }
     else {
-        tmpContext.putImageData(imageDataPatterns[pattern], 0, 0);
-        copyCanvas(tmpCanvas, modifPatternCanvas);
+        const contextBigTmp = bigTmpCanvas.getContext("2d");
+        contextBigTmp.putImageData(imageDataPatterns[pattern], 0, 0);
+        copyCanvas(bigTmpCanvas, modifPatternCanvas);
     }
 };
 
 document.getElementById(ID_BTN_ENABLE_SAVE).onclick = () => {
-    // load default data in the images data from the original image for the missing patterns
-    const context = originalCanvas.getContext("2d");
-
     setDisabled(ID_BTN_ENABLE_SAVE, true);
-    sleep(100, (value) => {
-        console.log(value);
+    saveImageData(modifPatternCanvas, imageDataPatterns, pattern);
+
+    sleep(100, () => {
+        // load default data in the images data from the original image for the missing patterns
         for (let tmpPattern = pattern + 1; tmpPattern <= defSpriteSettings.nbPatterns; tmpPattern++) {
-            sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, tmpPattern);
-            zoomInCanvas(tmpCanvas, tmp2Canvas);
-            const tmp2Context = tmp2Canvas.getContext("2d");
-            imageDataPatterns[tmpPattern] = tmp2Context.getImageData(0, 0, tmp2Canvas.width, tmp2Canvas.height);
+            sliceSpriteGivenPattern(defSpriteSettings, smallTmpCanvas, tmpPattern);
+            zoomInCanvas(smallTmpCanvas, bigTmpCanvas);
+            const contextBigTmp = bigTmpCanvas.getContext("2d");
+            imageDataPatterns[tmpPattern] = contextBigTmp.getImageData(0, 0, bigTmpCanvas.width, bigTmpCanvas.height);
         }
     });
     sleep(3000, () => {
@@ -482,6 +504,19 @@ document.getElementById(ID_BTN_ENABLE_SAVE).onclick = () => {
 };
 
 document.getElementById(ID_BTN_SAVE_MODIF).onclick = () => {
+    saveImageData(modifPatternCanvas, imageDataPatterns, pattern);
+
+    finalResultCanvas.width = originalCanvas.width;
+    finalResultCanvas.height = originalCanvas.height;
+
+    const contextFinalResult = finalResultCanvas.getContext("2d");
+    const contextBigTmp = bigTmpCanvas.getContext("2d");
+
+    for (let tmpPattern = 0; tmpPattern <= defSpriteSettings.nbPatterns; tmpPattern++) {
+        contextBigTmp.putImageData(imageDataPatterns[tmpPattern], 0, 0);
+        zoomOutCanvas(bigTmpCanvas, smallTmpCanvas);
+        contextFinalResult.drawImage(smallTmpCanvas, tmpPattern * defSpriteSettings.patternWidth, 0);
+    }
 };
 //#endregion
 
