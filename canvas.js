@@ -93,6 +93,7 @@ const ID_INPUT_SPRITE_HEIGHT = "input-sprite-height";
 const ID_INPUT_NB_PATTERNS = "input-number-patterns";
 const ID_INPUT_IMG = "input-img";
 const ID_BTN_START_MODIF = "btn-start-modification";
+const ID_BTN_ENABLE_SAVE = "btn-enable-img-save";
 const ID_BTN_SLICE = "btn-slice";
 const ID_BTN_ZOOM_IN = "btn-zoom-in";
 const ID_BTN_ZOOM_OUT = "btn-zoom-out";
@@ -121,7 +122,16 @@ let imageDataPatterns = [];
 //#endregion
 
 // ------------- Functions ---------------
-//#region
+//#region Independant functions (use only parameters)
+
+/**
+ * Enable/disable an element
+ * @param {string} elmId 
+ * @param {bool} isDisabled 
+ */
+const setDisabled = (elmId, isDisabled) => {
+    document.getElementById(elmId).disabled = isDisabled;
+};
 
 /**
  * Handler for when an image is loaded
@@ -144,10 +154,12 @@ const draw = (img, defSpriteSettings) => {
     canvas.height = img.height;
     const context = canvas.getContext("2d");
     context.drawImage(img, 0, 0);
-    defSpriteSettings.setIsDefWeapDrawn(false);
 };
 
-const failed = () => {
+/**
+ * Handler for loading failure
+ */
+const handleFailure = () => {
     console.error("The provided file could not be loaded as an Image.");
 };
 
@@ -365,6 +377,17 @@ const drawPixel = (canvas, pixelX, pixelY, color) => {
 
 //#endregion
 
+//#region Dependant functions (use global variables)
+/**
+ * Globally reset the settings
+ */
+const globalReset = () => {
+    defSpriteSettings.setIsDefWeapDrawn(false);
+    pattern = 0;
+    setDisabled(ID_BTN_SAVE_MODIF, true);
+};
+//#endregion
+
 // ----------------- Listeners --------------------
 //#region
 
@@ -374,11 +397,15 @@ callbackOnchangeForElm(ID_INPUT_NB_PATTERNS, (val) => { defSpriteSettings.setNbP
 
 document.getElementById(ID_INPUT_IMG).onchange = (evt) => {
     let img = new Image();
-    img.onload = () => handleImgLoad(img, defSpriteSettings);
-    img.onerror = () => failed();
+    img.onload = () => {
+        handleImgLoad(img, defSpriteSettings);
+        globalReset();
+    };
+    img.onerror = () => handleFailure();
     img.src = URL.createObjectURL(evt.target.files[0]);
 };
 
+//#region Invisible buttons
 document.getElementById(ID_BTN_SLICE).onclick = () => {
     if (pattern > 14) {
         pattern = 0;
@@ -394,24 +421,28 @@ document.getElementById(ID_BTN_ZOOM_OUT).onclick = () => {
     zoomOutCanvas(tmpCanvas, defWeaponCanvas);
     copyCanvas(defWeaponCanvas, tmpCanvas);
 }
-document.getElementById(ID_BTN_CLEAR).onclick = () => {
-    clearCanvas(modifPatternCanvas);
-};
+//#endregion
 
+//#region Switch patterns and image saving
 document.getElementById(ID_BTN_START_MODIF).onclick = () => {
+    // save the image data of the current pattern before going to the next one
     const tmpContext = tmpCanvas.getContext("2d");
     copyCanvas(modifPatternCanvas, tmpCanvas);
     imageDataPatterns[pattern] = tmpContext.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
-
     pattern++;
+
     if (pattern > defSpriteSettings.nbPatterns) {
         pattern = 1;
     }
+
+    // avoid drawing the default weapon each time we change pattern
     if (!defSpriteSettings.isDefWeapDrawn) {
         sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, 0);
         zoomInCanvas(tmpCanvas, defWeaponCanvas);
         defSpriteSettings.setIsDefWeapDrawn(true);
     }
+
+    // if there is no data for the current pattern, draw the one from the original image
     if (imageDataPatterns[pattern] == null || imageDataPatterns[pattern] == undefined) {
         sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, pattern);
         zoomInCanvas(tmpCanvas, modifPatternCanvas);
@@ -422,6 +453,9 @@ document.getElementById(ID_BTN_START_MODIF).onclick = () => {
     }
 };
 
+//#endregion
+
+//#region Event listeners on the pattern canvas
 document.getElementById(ID_CANVAS_MODIF_PATTERN).onmousedown = () => {
     beginModif = true;
 };
@@ -440,7 +474,9 @@ document.getElementById(ID_CANVAS_MODIF_PATTERN).onmousemove = (evt) => {
         drawPixel(modifPatternCanvas, originPixelX, originPixelY, currPixelColor);
     }
 };
+//#endregion
 
+//#region Options buttons
 document.getElementById(ID_BTN_LIGHTEST).onclick = () => {
     currPixelColor.setLightestColor();
 };
@@ -453,5 +489,9 @@ document.getElementById(ID_BTN_DARKEST).onclick = () => {
 document.getElementById(ID_BTN_ERASE).onclick = () => {
     currPixelColor.setEraseColor();
 };
+document.getElementById(ID_BTN_CLEAR).onclick = () => {
+    clearCanvas(modifPatternCanvas);
+};
+//#endregion
 
 //#endregion
