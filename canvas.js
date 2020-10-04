@@ -8,13 +8,15 @@ class SpriteSettings {
      * @param {HTMLCanvasElement} spriteCanvas 
      * @param {number} patternWidth 
      * @param {number} patternHeight 
-     * @param {number} nbPatterns 
+     * @param {number} nbPatterns
+     * @param {number} resizeFactor
      */
-    constructor(spriteCanvas, patternWidth, patternHeight, nbPatterns) {
+    constructor(spriteCanvas, patternWidth, patternHeight, nbPatterns, resizeFactor) {
         this.canvas = spriteCanvas;
         this.patternWidth = patternWidth;
         this.patternHeight = patternHeight;
         this.nbPatterns = nbPatterns;
+        this.resizeFactor = resizeFactor;
         this.isDefWeapDrawn = false;
     }
 
@@ -28,6 +30,10 @@ class SpriteSettings {
 
     setNbPatterns = (nb) => {
         this.nbPatterns = nb;
+    }
+
+    setResizeFactor = (factor) => {
+        this.resizeFactor = factor;
     }
 
     setIsDefWeapDrawn = (bool) => {
@@ -83,9 +89,7 @@ class PixelColor {
 //#endregion
 
 // --------------- Variables -------------
-//#region 
-// define zoom factor
-const RESIZE_FACTOR = 15;
+//#region
 
 // ids of elements
 const ID_CANVAS_ORIGINAL_SPRITE = "canvas-original-sprite";
@@ -97,6 +101,7 @@ const ID_CANVAS_MODIF_PATTERN = "canvas-modif-pattern";
 const ID_INPUT_SPRITE_WIDTH = "input-sprite-width";
 const ID_INPUT_SPRITE_HEIGHT = "input-sprite-height";
 const ID_INPUT_NB_PATTERNS = "input-number-patterns";
+const ID_INPUT_RESIZE_FACTOR = "input-resize-factor";
 const ID_INPUT_IMG = "input-img";
 const ID_BTN_NEXT_PATTERN = "btn-next-pattern";
 const ID_BTN_ENABLE_SAVE = "btn-enable-img-save";
@@ -123,7 +128,7 @@ const bigTmpCanvas = document.getElementById(ID_CANVAS_BIG_TMP);
 const modifPatternCanvas = document.getElementById(ID_CANVAS_MODIF_PATTERN);
 
 const currPixelColor = new PixelColor(0, 0, 0, 0);
-const defSpriteSettings = new SpriteSettings(originalCanvas, 96, 64, 14);
+const defSpriteSettings = new SpriteSettings(originalCanvas, 96, 64, 18, 15);
 
 let pattern = 0;
 let beginModif = false;
@@ -183,7 +188,7 @@ const handleFailure = () => {
  */
 const callbackOnchangeForElm = (id, callback) => {
     document.getElementById(id).onchange = (evt) => {
-        callback(+evt.target.value);
+        callback(evt.target.value);
     };
 };
 
@@ -286,16 +291,16 @@ const resizeCanvas = (canvas, newCanvas, resizeFactor, resizeFunc) => {
 };
 
 /**
- * Zoom in based on the value of RESIZE_FACTOR
+ * Zoom in based on the value of the resize factor
  * @param {HTMLCanvasElement} fromCanvas Canvas to zoom
  * @param {HTMLCanvasElement} toCanvas Canvas of the resulting zoom
  */
-const zoomInCanvas = (fromCanvas, toCanvas) => {
+const zoomInCanvas = (fromCanvas, toCanvas, resizeFactor) => {
 
     const resizeFunc = (width, height, newWidth, _, data, newData) => {
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                const newCoords = getZoomedInCoords(x * RESIZE_FACTOR, y * RESIZE_FACTOR, RESIZE_FACTOR);
+                const newCoords = getZoomedInCoords(x * resizeFactor, y * resizeFactor, resizeFactor);
                 const colorIndices = getColorIndicesForCoords(x, y, width);
                 const [red, green, blue, alpha] = colorIndices;
 
@@ -312,21 +317,21 @@ const zoomInCanvas = (fromCanvas, toCanvas) => {
         }
     };
 
-    resizeCanvas(fromCanvas, toCanvas, RESIZE_FACTOR, resizeFunc);
+    resizeCanvas(fromCanvas, toCanvas, resizeFactor, resizeFunc);
 };
 
 /**
- * Zoom out based on the value of RESIZE_FACTOR
+ * Zoom out based on the value of the resize factor
  * @param {HTMLCanvasElement} fromCanvas Canvas to zoom
  * @param {HTMLCanvasElement} toCanvas Canvas of the resulting zoom
  */
-const zoomOutCanvas = (fromCanvas, toCanvas) => {
+const zoomOutCanvas = (fromCanvas, toCanvas, resizeFactor) => {
 
     const resizeFunc = (width, _, newWidth, newHeight, data, newData) => {
         for (let y = 0; y < newHeight; y++) {
             for (let x = 0; x < newWidth; x++) {
                 const [zoomedOutRed, zoomedOutGreen, zoomedOutBlue, zoomedOutAlpha] = getColorIndicesForCoords(x, y, newWidth);
-                const [red, green, blue, alpha] = getColorIndicesForCoords(x * RESIZE_FACTOR, y * RESIZE_FACTOR, width);
+                const [red, green, blue, alpha] = getColorIndicesForCoords(x * resizeFactor, y * resizeFactor, width);
 
                 newData[zoomedOutRed] = data[red];
                 newData[zoomedOutGreen] = data[green];
@@ -336,7 +341,7 @@ const zoomOutCanvas = (fromCanvas, toCanvas) => {
         }
     };
 
-    resizeCanvas(fromCanvas, toCanvas, 1 / RESIZE_FACTOR, resizeFunc);
+    resizeCanvas(fromCanvas, toCanvas, 1 / resizeFactor, resizeFunc);
 };
 
 /**
@@ -368,7 +373,7 @@ const clearCanvas = (canvas) => {
  * @param {number} pixelY 
  * @param {PixelColor} color
  */
-const drawPixel = (canvas, pixelX, pixelY, color) => {
+const drawPixel = (canvas, resizeFactor, pixelX, pixelY, color) => {
     const width = canvas.width;
     const height = canvas.height;
 
@@ -376,8 +381,8 @@ const drawPixel = (canvas, pixelX, pixelY, color) => {
     const imageData = context.getImageData(0, 0, width, height);
     let data = imageData.data;
 
-    for (let y = pixelY; y < pixelY + RESIZE_FACTOR; y++) {
-        for (let x = pixelX; x < pixelX + RESIZE_FACTOR; x++) {
+    for (let y = pixelY; y < pixelY + resizeFactor; y++) {
+        for (let x = pixelX; x < pixelX + resizeFactor; x++) {
             const [r, g, b, a] = getColorIndicesForCoords(x, y, width);
             data[r] = color.r;
             data[g] = color.g;
@@ -409,6 +414,8 @@ const saveImageData = (canvas, list, index) => {
 const globalReset = () => {
     defSpriteSettings.setIsDefWeapDrawn(false);
     pattern = 0;
+    imageDataPatterns = [];
+
     setDisabled(ID_BTN_SAVE_MODIF, true);
     setDisabled(ID_BTN_ENABLE_SAVE, true);
     setDisabled(ID_BTN_REPLACE_ORIGINAL, true);
@@ -416,8 +423,8 @@ const globalReset = () => {
     smallTmpCanvas.width = defSpriteSettings.spriteWidth;
     smallTmpCanvas.height = defSpriteSettings.patternHeight;
 
-    bigTmpCanvas.width = smallTmpCanvas.width * RESIZE_FACTOR;
-    bigTmpCanvas.height = smallTmpCanvas.height * RESIZE_FACTOR;
+    bigTmpCanvas.width = smallTmpCanvas.width * defSpriteSettings.resizeFactor;
+    bigTmpCanvas.height = smallTmpCanvas.height * defSpriteSettings.resizeFactor;
 };
 //#endregion
 
@@ -426,9 +433,23 @@ const globalReset = () => {
 // ----------------- Listeners --------------------
 //#region
 
-callbackOnchangeForElm(ID_INPUT_SPRITE_WIDTH, (val) => { defSpriteSettings.setPatternWidth(val); });
-callbackOnchangeForElm(ID_INPUT_SPRITE_HEIGHT, (val) => { defSpriteSettings.setPatternHeight(val); });
-callbackOnchangeForElm(ID_INPUT_NB_PATTERNS, (val) => { defSpriteSettings.setNbPatterns(val); });
+//#region Input listeners
+callbackOnchangeForElm(ID_INPUT_SPRITE_WIDTH, (val) => {
+    defSpriteSettings.setPatternWidth(+val);
+    globalReset();
+});
+callbackOnchangeForElm(ID_INPUT_SPRITE_HEIGHT, (val) => {
+    defSpriteSettings.setPatternHeight(+val);
+    globalReset();
+});
+callbackOnchangeForElm(ID_INPUT_NB_PATTERNS, (val) => {
+    defSpriteSettings.setNbPatterns(+val);
+    globalReset();
+});
+callbackOnchangeForElm(ID_INPUT_RESIZE_FACTOR, (val) => {
+    defSpriteSettings.setResizeFactor(+val);
+    globalReset();
+});
 
 document.getElementById(ID_INPUT_IMG).onchange = (evt) => {
     let img = new Image();
@@ -439,6 +460,7 @@ document.getElementById(ID_INPUT_IMG).onchange = (evt) => {
     img.onerror = () => handleFailure();
     img.src = URL.createObjectURL(evt.target.files[0]);
 };
+//#endregion
 
 //#region Invisible buttons
 document.getElementById(ID_BTN_SLICE).onclick = () => {
@@ -449,17 +471,18 @@ document.getElementById(ID_BTN_SLICE).onclick = () => {
 };
 
 document.getElementById(ID_BTN_ZOOM_IN).onclick = () => {
-    zoomInCanvas(smallTmpCanvas, defWeaponCanvas);
+    zoomInCanvas(smallTmpCanvas, defWeaponCanvas, defSpriteSettings.resizeFactor);
     copyCanvas(defWeaponCanvas, bigTmpCanvas);
 }
 document.getElementById(ID_BTN_ZOOM_OUT).onclick = () => {
-    zoomOutCanvas(bigTmpCanvas, defWeaponCanvas);
+    zoomOutCanvas(bigTmpCanvas, defWeaponCanvas, defSpriteSettings.resizeFactor);
     copyCanvas(defWeaponCanvas, smallTmpCanvas);
 }
 //#endregion
 
 //#region Switch patterns and image saving
 document.getElementById(ID_BTN_NEXT_PATTERN).onclick = () => {
+    const RESIZE_FACTOR = defSpriteSettings.resizeFactor;
     saveImageData(modifPatternCanvas, imageDataPatterns, pattern);
 
     pattern++;
@@ -470,7 +493,7 @@ document.getElementById(ID_BTN_NEXT_PATTERN).onclick = () => {
     // avoid drawing the default weapon each time we change pattern
     if (!defSpriteSettings.isDefWeapDrawn) {
         sliceSpriteGivenPattern(defSpriteSettings, smallTmpCanvas, 0);
-        zoomInCanvas(smallTmpCanvas, defWeaponCanvas);
+        zoomInCanvas(smallTmpCanvas, defWeaponCanvas, RESIZE_FACTOR);
         defSpriteSettings.setIsDefWeapDrawn(true);
         saveImageData(defWeaponCanvas, imageDataPatterns, 0);
         setDisabled(ID_BTN_ENABLE_SAVE, false);
@@ -479,7 +502,7 @@ document.getElementById(ID_BTN_NEXT_PATTERN).onclick = () => {
     // if there is no data for the current pattern, draw the one from the original image
     if (imageDataPatterns[pattern] == null || imageDataPatterns[pattern] == undefined) {
         sliceSpriteGivenPattern(defSpriteSettings, smallTmpCanvas, pattern);
-        zoomInCanvas(smallTmpCanvas, modifPatternCanvas);
+        zoomInCanvas(smallTmpCanvas, modifPatternCanvas, RESIZE_FACTOR);
     }
     else {
         const contextBigTmp = bigTmpCanvas.getContext("2d");
@@ -496,7 +519,7 @@ document.getElementById(ID_BTN_ENABLE_SAVE).onclick = () => {
         // load default data in the images data from the original image for the missing patterns
         for (let tmpPattern = pattern + 1; tmpPattern <= defSpriteSettings.nbPatterns; tmpPattern++) {
             sliceSpriteGivenPattern(defSpriteSettings, smallTmpCanvas, tmpPattern);
-            zoomInCanvas(smallTmpCanvas, bigTmpCanvas);
+            zoomInCanvas(smallTmpCanvas, bigTmpCanvas, defSpriteSettings.resizeFactor);
             const contextBigTmp = bigTmpCanvas.getContext("2d");
             imageDataPatterns[tmpPattern] = contextBigTmp.getImageData(0, 0, bigTmpCanvas.width, bigTmpCanvas.height);
         }
@@ -517,7 +540,7 @@ document.getElementById(ID_BTN_SAVE_MODIF).onclick = () => {
 
     for (let tmpPattern = 0; tmpPattern <= defSpriteSettings.nbPatterns; tmpPattern++) {
         contextBigTmp.putImageData(imageDataPatterns[tmpPattern], 0, 0);
-        zoomOutCanvas(bigTmpCanvas, smallTmpCanvas);
+        zoomOutCanvas(bigTmpCanvas, smallTmpCanvas, defSpriteSettings.resizeFactor);
         contextFinalResult.drawImage(smallTmpCanvas, tmpPattern * defSpriteSettings.patternWidth, 0);
     }
 
@@ -539,13 +562,15 @@ document.getElementById(ID_CANVAS_MODIF_PATTERN).onmouseup = () => {
 
 document.getElementById(ID_CANVAS_MODIF_PATTERN).onmousemove = (evt) => {
     if (beginModif) {
+        const RESIZE_FACTOR = defSpriteSettings.resizeFactor;
+
         const clickX = evt.layerX;
         const clickY = evt.layerY;
 
         const originPixelX = clickX - (clickX % RESIZE_FACTOR);
         const originPixelY = clickY - (clickY % RESIZE_FACTOR);
 
-        drawPixel(modifPatternCanvas, originPixelX, originPixelY, currPixelColor);
+        drawPixel(modifPatternCanvas, RESIZE_FACTOR, originPixelX, originPixelY, currPixelColor);
     }
 };
 //#endregion
