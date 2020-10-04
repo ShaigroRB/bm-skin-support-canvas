@@ -5,7 +5,7 @@
 
 .bg-light {
     color: #343030;
-    background-color: #cfcfcf;
+    background-color: #aeb7fd;
 }
 
 .mg-horizontal {
@@ -45,4 +45,19 @@
 
 #canvas-modif-pattern {
     opacity: 0.65;
+}
+
+.options button {
+    border-radius: 4px;
+}
+
+#btn-lightest-color {
+    background-color: #ffffff;
+}
+#btn-normal-color {
+    background-color: #e2e2e2;
+}
+#btn-darkest-color {
+    background-color: #959595;
+    color: #ffffff;
 }
