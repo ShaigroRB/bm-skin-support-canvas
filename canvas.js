@@ -15,6 +15,7 @@ class SpriteSettings {
         this.widthPattern = widthPattern;
         this.heightPattern = heightPattern;
         this.nbPatterns = nbPatterns;
+        this.isDefWeapDrawn = false;
     }
 
     setWidthPattern = (width) => {
@@ -27,6 +28,10 @@ class SpriteSettings {
 
     setNbPatterns = (nb) => {
         this.nbPatterns = nb;
+    }
+
+    setIsDefWeapDrawn = (bool) => {
+        this.isDefWeapDrawn = bool;
     }
 }
 
@@ -106,10 +111,12 @@ const defWeaponCanvas = document.getElementById(ID_CANVAS_DEF_WEAP);
 const tmpCanvas = document.getElementById(ID_CANVAS_TMP);
 const modifPatternCanvas = document.getElementById(ID_CANVAS_MODIF_PATTERN);
 
-let pattern = 1;
-
 const currPixelColor = new PixelColor(0, 0, 0, 0);
 const defSpriteSettings = new SpriteSettings(originalCanvas, 96, 64, 14);
+
+let pattern = 1;
+let beginModif = false;
+let patternsImageData = [];
 
 //#endregion
 
@@ -137,6 +144,7 @@ const draw = (img, defSpriteSettings) => {
     canvas.height = img.height;
     const context = canvas.getContext("2d");
     context.drawImage(img, 0, 0);
+    defSpriteSettings.setIsDefWeapDrawn(false);
 };
 
 const failed = () => {
@@ -223,18 +231,15 @@ const getZoomedInCoords = (X, Y, newSize) => {
 
 /**
  * Generic resize function
- * @param {string} canvasId
- * @param {string} newCanvasId
- * @param {string} newCanvasDivId 
+ * @param {HTMLCanvasElement} canvas
+ * @param {HTMLCanvasElement} newCanvas
  * @param {number} resizeFactor 
  * @param {(width, height, newWidth, newHeight, data, newData) => {}} resizeFunc 
  */
-const resizeCanvas = (canvasId, newCanvasId, resizeFactor, resizeFunc) => {
-    let canvas = document.getElementById(canvasId);
+const resizeCanvas = (canvas, newCanvas, resizeFactor, resizeFunc) => {
     const width = canvas.width;
     const height = canvas.height;
 
-    let newCanvas = document.getElementById(newCanvasId);
     newCanvas.width = width * resizeFactor;
     newCanvas.height = height * resizeFactor;
     const newWidth = newCanvas.width;
@@ -256,10 +261,10 @@ const resizeCanvas = (canvasId, newCanvasId, resizeFactor, resizeFunc) => {
 
 /**
  * Zoom in based on the value of RESIZE_FACTOR
- * @param {string} fromCanvasId Id of the canvas to zoom
- * @param {string} toCanvasId Id of the canvas of the resulting zoom
+ * @param {HTMLCanvasElement} fromCanvas Canvas to zoom
+ * @param {HTMLCanvasElement} toCanvas Canvas of the resulting zoom
  */
-const zoomInCanvas = (fromCanvasId, toCanvasId) => {
+const zoomInCanvas = (fromCanvas, toCanvas) => {
 
     const resizeFunc = (width, height, newWidth, _, data, newData) => {
         for (let y = 0; y < height; y++) {
@@ -281,15 +286,15 @@ const zoomInCanvas = (fromCanvasId, toCanvasId) => {
         }
     };
 
-    resizeCanvas(fromCanvasId, toCanvasId, RESIZE_FACTOR, resizeFunc);
+    resizeCanvas(fromCanvas, toCanvas, RESIZE_FACTOR, resizeFunc);
 };
 
 /**
  * Zoom out based on the value of RESIZE_FACTOR
- * @param {string} fromCanvasId Id of the canvas to zoom
- * @param {string} toCanvasId Id of the canvas of the resulting zoom
+ * @param {HTMLCanvasElement} fromCanvas Canvas to zoom
+ * @param {HTMLCanvasElement} toCanvas Canvas of the resulting zoom
  */
-const zoomOutCanvas = (fromCanvasId, toCanvasId) => {
+const zoomOutCanvas = (fromCanvas, toCanvas) => {
 
     const resizeFunc = (width, _, newWidth, newHeight, data, newData) => {
         for (let y = 0; y < newHeight; y++) {
@@ -305,17 +310,15 @@ const zoomOutCanvas = (fromCanvasId, toCanvasId) => {
         }
     };
 
-    resizeCanvas(fromCanvasId, toCanvasId, 1 / RESIZE_FACTOR, resizeFunc);
+    resizeCanvas(fromCanvas, toCanvas, 1 / RESIZE_FACTOR, resizeFunc);
 };
 
 /**
  * Copy content of a canvas to another one
- * @param {string} fromCanvasId 
- * @param {string} toCanvasId 
+ * @param {HTMLCanvasElement} fromCanvas
+ * @param {HTMLCanvasElement} toCanvas
  */
-const copyCanvas = (fromCanvasId, toCanvasId) => {
-    const fromCanvas = document.getElementById(fromCanvasId);
-    let toCanvas = document.getElementById(toCanvasId);
+const copyCanvas = (fromCanvas, toCanvas) => {
     toCanvas.width = fromCanvas.width;
     toCanvas.height = fromCanvas.height;
     const contextToCanvas = toCanvas.getContext("2d");
@@ -324,10 +327,9 @@ const copyCanvas = (fromCanvasId, toCanvasId) => {
 
 /**
  * Clear content of a canvas
- * @param {string} canvasId 
+ * @param {HTMLCanvasElement} canvas 
  */
-const clearCanvas = (canvasId) => {
-    const canvas = document.getElementById(canvasId);
+const clearCanvas = (canvas) => {
     const context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
 };
@@ -335,14 +337,12 @@ const clearCanvas = (canvasId) => {
 
 /**
  * Redraw a pixel
- * @param {string} canvasId 
+ * @param {HTMLCanvasElement} canvas
  * @param {number} pixelX 
  * @param {number} pixelY 
  * @param {PixelColor} color
  */
-const drawPixel = (canvasId, pixelX, pixelY, color) => {
-    let canvas = document.createElement("canvas");
-    canvas = document.getElementById(canvasId);
+const drawPixel = (canvas, pixelX, pixelY, color) => {
     const width = canvas.width;
     const height = canvas.height;
 
@@ -387,31 +387,32 @@ document.getElementById(ID_BTN_SLICE).onclick = () => {
 };
 
 document.getElementById(ID_BTN_ZOOM_IN).onclick = () => {
-    zoomInCanvas(ID_CANVAS_TMP, ID_CANVAS_DEF_WEAP);
-    copyCanvas(ID_CANVAS_DEF_WEAP, ID_CANVAS_TMP);
+    zoomInCanvas(tmpCanvas, defWeaponCanvas);
+    copyCanvas(defWeaponCanvas, tmpCanvas);
 }
 document.getElementById(ID_BTN_ZOOM_OUT).onclick = () => {
-    zoomOutCanvas(ID_CANVAS_TMP, ID_CANVAS_DEF_WEAP);
-    copyCanvas(ID_CANVAS_DEF_WEAP, ID_CANVAS_TMP);
+    zoomOutCanvas(tmpCanvas, defWeaponCanvas);
+    copyCanvas(defWeaponCanvas, tmpCanvas);
 }
 document.getElementById(ID_BTN_CLEAR).onclick = () => {
-    clearCanvas(ID_CANVAS_MODIF_PATTERN);
+    clearCanvas(modifPatternCanvas);
 };
 
 document.getElementById(ID_BTN_START_MODIF).onclick = () => {
     if (pattern > defSpriteSettings.nbPatterns) {
         pattern = 1;
     }
-    sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, 0);
-    zoomInCanvas(ID_CANVAS_TMP, ID_CANVAS_DEF_WEAP);
-    copyCanvas(ID_CANVAS_DEF_WEAP, ID_CANVAS_TMP);
-
+    if (!defSpriteSettings.isDefWeapDrawn) {
+        sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, 0);
+        zoomInCanvas(tmpCanvas, defWeaponCanvas);
+        copyCanvas(defWeaponCanvas, tmpCanvas);
+        defSpriteSettings.setIsDefWeapDrawn(true);
+    }
     sliceSpriteGivenPattern(defSpriteSettings, tmpCanvas, pattern++);
-    zoomInCanvas(ID_CANVAS_TMP, ID_CANVAS_MODIF_PATTERN);
-    copyCanvas(ID_CANVAS_MODIF_PATTERN, ID_CANVAS_TMP);
+    zoomInCanvas(tmpCanvas, modifPatternCanvas);
+    copyCanvas(modifPatternCanvas, tmpCanvas);
 };
 
-let beginModif = false;
 document.getElementById(ID_CANVAS_MODIF_PATTERN).onmousedown = () => {
     beginModif = true;
 };
@@ -427,7 +428,7 @@ document.getElementById(ID_CANVAS_MODIF_PATTERN).onmousemove = (evt) => {
         const originPixelX = clickX - (clickX % RESIZE_FACTOR);
         const originPixelY = clickY - (clickY % RESIZE_FACTOR);
 
-        drawPixel(ID_CANVAS_MODIF_PATTERN, originPixelX, originPixelY, currPixelColor);
+        drawPixel(modifPatternCanvas, originPixelX, originPixelY, currPixelColor);
     }
 };
 
