@@ -98,9 +98,10 @@ const ID_INPUT_SPRITE_WIDTH = "input-sprite-width";
 const ID_INPUT_SPRITE_HEIGHT = "input-sprite-height";
 const ID_INPUT_NB_PATTERNS = "input-number-patterns";
 const ID_INPUT_IMG = "input-img";
-const ID_BTN_START_MODIF = "btn-start-modification";
+const ID_BTN_NEXT_PATTERN = "btn-next-pattern";
 const ID_BTN_ENABLE_SAVE = "btn-enable-img-save";
 const ID_BTN_SAVE_MODIF = "btn-save-modif";
+const ID_BTN_REPLACE_ORIGINAL = "btn-replace-original";
 const ID_BTN_SLICE = "btn-slice";
 const ID_BTN_ZOOM_IN = "btn-zoom-in";
 const ID_BTN_ZOOM_OUT = "btn-zoom-out";
@@ -409,7 +410,8 @@ const globalReset = () => {
     defSpriteSettings.setIsDefWeapDrawn(false);
     pattern = 0;
     setDisabled(ID_BTN_SAVE_MODIF, true);
-    setDisabled(ID_BTN_ENABLE_SAVE, false);
+    setDisabled(ID_BTN_ENABLE_SAVE, true);
+    setDisabled(ID_BTN_REPLACE_ORIGINAL, true);
 
     smallTmpCanvas.width = defSpriteSettings.spriteWidth;
     smallTmpCanvas.height = defSpriteSettings.patternHeight;
@@ -457,7 +459,7 @@ document.getElementById(ID_BTN_ZOOM_OUT).onclick = () => {
 //#endregion
 
 //#region Switch patterns and image saving
-document.getElementById(ID_BTN_START_MODIF).onclick = () => {
+document.getElementById(ID_BTN_NEXT_PATTERN).onclick = () => {
     saveImageData(modifPatternCanvas, imageDataPatterns, pattern);
 
     pattern++;
@@ -471,6 +473,7 @@ document.getElementById(ID_BTN_START_MODIF).onclick = () => {
         zoomInCanvas(smallTmpCanvas, defWeaponCanvas);
         defSpriteSettings.setIsDefWeapDrawn(true);
         saveImageData(defWeaponCanvas, imageDataPatterns, 0);
+        setDisabled(ID_BTN_ENABLE_SAVE, false);
     }
 
     // if there is no data for the current pattern, draw the one from the original image
@@ -517,6 +520,12 @@ document.getElementById(ID_BTN_SAVE_MODIF).onclick = () => {
         zoomOutCanvas(bigTmpCanvas, smallTmpCanvas);
         contextFinalResult.drawImage(smallTmpCanvas, tmpPattern * defSpriteSettings.patternWidth, 0);
     }
+
+    setDisabled(ID_BTN_REPLACE_ORIGINAL, false);
+};
+
+document.getElementById(ID_BTN_REPLACE_ORIGINAL).onclick = () => {
+    copyCanvas(finalResultCanvas, originalCanvas);
 };
 //#endregion
 
